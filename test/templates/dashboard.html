@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频数据平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        .card-header {
+            background-color: #4e73df;
+            color: white;
+        }
+        .stat-card {
+            border-left: 4px solid #4e73df;
+            border-radius: 0.35rem;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: bold;
+        }
+        .action-buttons .btn {
+            margin-right: 5px;
+        }
+        #videosTable_wrapper .dataTables_filter {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-4">
+        <!-- 顶部导航 -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-camera-reels"></i> 视频数据平台
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/">仪表盘</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/accounts">账号管理</a>
+                        </li>
+                    </ul>
+                    <div>
+                        <button class="btn btn-light" id="refreshDataBtn">
+                            <i class="bi bi-arrow-repeat"></i> 刷新数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 数据概览 -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card border-left-primary">
+                    <div class="card-body py-2">
+                        <div class="text-xs font-weight-bold text-primary mb-1">视频总数</div>
+                        <div class="h5 mb-0 font-weight-bold stat-number" id="totalVideos">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card border-left-success">
+                    <div class="card-body py-2">
+                        <div class="text-xs font-weight-bold text-success mb-1">账号总数</div>
+                        <div class="h5 mb-0 font-weight-bold stat-number" id="totalAccounts">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card border-left-info">
+                    <div class="card-body py-2">
+                        <div class="text-xs font-weight-bold text-info mb-1">平均点赞</div>
+                        <div class="h5 mb-0 font-weight-bold stat-number" id="avgLikes">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card border-left-warning">
+                    <div class="card-body py-2">
+                        <div class="text-xs font-weight-bold text-warning mb-1">平均转发</div>
+                        <div class="h5 mb-0 font-weight-bold stat-number" id="avgShares">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选区域 -->
+        <div class="card mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">数据筛选</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">账号</label>
+                            <select class="form-select" id="accountFilter" multiple>
+                                <!-- 账号选项将通过JS动态加载 -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">发布时间</label>
+                            <select class="form-select" id="dateFilter">
+                                <option value="">全部时间</option>
+                                <option value="7">最近7天</option>
+                                <option value="30">最近30天</option>
+                                <option value="90">最近90天</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">最小点赞</label>
+                            <input type="number" class="form-control" id="minLikesFilter" placeholder="最小点赞数">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">地区</label>
+                            <input type="text" class="form-control" id="regionFilter" placeholder="发布地区">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 text-end">
+                        <button class="btn btn-primary me-2" id="applyFiltersBtn">
+                            <i class="bi bi-filter"></i> 应用筛选
+                        </button>
+                        <button class="btn btn-outline-secondary" id="resetFiltersBtn">
+                            <i class="bi bi-x-circle"></i> 重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">视频数据表格</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="videosTable" class="table table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>账号</th>
+                                <th>发布时间</th>
+                                <th>地区</th>
+                                <th>点赞</th>
+                                <th>转发</th>
+                                <th>评论</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // 初始化表格
+        let videosTable;
+
+        $(document).ready(function() {
+            // 初始化账号选择器
+            $('#accountFilter').select2({
+                placeholder: "选择账号（可多选）",
+                allowClear: true
+            });
+
+            // 初始化数据表
+            initVideosTable();
+
+            // 加载账号和统计数据
+            loadAccountStats();
+
+            // 绑定刷新数据按钮
+            $('#refreshDataBtn').click(function() {
+                refreshData();
+            });
+
+            // 绑定筛选按钮
+            $('#applyFiltersBtn').click(function() {
+                applyTableFilters();
+            });
+
+            // 绑定重置按钮
+            $('#resetFiltersBtn').click(function() {
+                resetTableFilters();
+            });
+        });
+
+        function initVideosTable() {
+            videosTable = $('#videosTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '/api/videos',
+                    type: 'GET',
+                    data: function(d) {
+                        // 将筛选参数传递给服务器
+                        return $.extend({}, d, {
+                            'accounts[]': $('#accountFilter').val() || [],
+                            date: $('#dateFilter').val(),
+                            min_likes: $('#minLikesFilter').val(),
+                            region: $('#regionFilter').val()
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Ajax请求错误:', xhr.responseText);
+                        alert('加载数据失败: ' + xhr.responseText);
+                    }
+                },
+                columns: [
+                    {
+                        data: 'title',
+                        render: function(data, type, row) {
+                            return `<div title="${data}" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${data.substring(0, 50)}${data.length > 50 ? '...' : ''}
+                            </div>`;
+                        }
+                    },
+                    {
+                        data: 'nickname',
+                        render: function(data, type, row) {
+                            return data ? data : '<span class="text-muted">无昵称</span>';
+                        }
+                    },
+                    {
+                        data: 'publish_time',
+                        render: function(data) {
+                            return new Date(data).toLocaleDateString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
+                    },
+                    { data: 'region' },
+                    {
+                        data: 'likes',
+                        className: 'text-center',
+                        render: function(data) {
+                            return data != null ? data.toLocaleString() : '0';
+                        }
+                    },
+                    {
+                        data: 'shares',
+                        className: 'text-center',
+                        render: function(data) {
+                            return data != null ? data.toLocaleString() : '0';
+                        }
+                    },
+                    {
+                        data: 'comments',
+                        className: 'text-center',
+                        render: function(data) {
+                            return data != null ? data.toLocaleString() : '0';
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            return `
+                                <button class="btn btn-sm btn-info view-video" data-id="${row.id}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-video" data-id="${row.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            `;
+                        }
+                    }
+                ],
+                language: {
+                    url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/zh.json"
+                },
+                lengthMenu: [10, 25, 50, 100],
+                pageLength: 10,
+                order: [[2, 'desc']],
+                dom: '<"row"<"col-md-6"l><"col-md-6"f>><rt><"row"<"col-md-6"i><"col-md-6"p>>'
+            });
+
+            // 绑定查看按钮事件
+            $('#videosTable').on('click', '.view-video', function() {
+                const videoId = $(this).data('id');
+                viewVideoDetails(videoId);
+            });
+
+            // 绑定删除按钮事件
+            $('#videosTable').on('click', '.delete-video', function() {
+                const videoId = $(this).data('id');
+                deleteVideo(videoId);
+            });
+        }
+
+        function loadAccountStats() {
+            // 调用API获取统计数据
+            $.get('/api/account-stats', function(data) {
+                // 更新账号筛选下拉框
+                $('#accountFilter').empty();
+                data.accounts.forEach(account => {
+                    $('#accountFilter').append(
+                        `<option value="${account.id}">${account.nickname || account.username}</option>`
+                    );
+                });
+
+                // 更新统计数据卡片
+                $('#totalVideos').text(data.videos_total.toLocaleString());
+                $('#totalAccounts').text(data.accounts.length);
+                $('#avgLikes').text(Math.round(data.avg_likes || 0).toLocaleString());
+                $('#avgShares').text(Math.round(data.avg_shares || 0).toLocaleString());
+            }).fail(function() {
+                console.error('加载统计数据失败');
+            });
+        }
+
+        function applyTableFilters() {
+            // 当应用筛选时，重新加载DataTables数据
+            videosTable.ajax.reload();
+        }
+
+        function resetTableFilters() {
+            // 重置所有筛选控件
+            $('#accountFilter').val(null).trigger('change');
+            $('#dateFilter').val('');
+            $('#minLikesFilter').val('');
+            $('#regionFilter').val('');
+
+            // 重新加载表格数据
+            videosTable.ajax.reload();
+        }
+
+        function refreshData() {
+            const button = $('#refreshDataBtn');
+            const originalHtml = button.html();
+
+            // 显示加载状态
+            button.prop('disabled', true);
+            button.html('<span class="spinner-border spinner-border-sm"></span> 获取中...');
+
+            // 调用API获取新数据
+            $.post('/fetch-data')
+                .done(function(response) {
+                    alert(`已成功获取 ${response.added_count} 条新视频数据`);
+
+                    // 刷新表格和统计数据
+                    videosTable.ajax.reload();
+                    loadAccountStats();
+                })
+                .fail(function() {
+                    alert('数据获取失败');
+                })
+                .always(function() {
+                    button.prop('disabled', false);
+                    button.html(originalHtml);
+                });
+        }
+
+        function viewVideoDetails(videoId) {
+            // 打开新窗口查看视频详情
+            window.open(`/video/wechat/${videoId}`, '_blank');
+        }
+
+        function deleteVideo(videoId) {
+            if (confirm('确定要删除这条视频数据吗？')) {
+                // 调用API删除视频
+                $.ajax({
+                    url: `/api/video/delete/${videoId}`,
+                    type: 'DELETE',
+                    success: function() {
+                        // 重新加载表格数据
+                        videosTable.ajax.reload();
+                    },
+                    error: function() {
+                        alert('删除失败');
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

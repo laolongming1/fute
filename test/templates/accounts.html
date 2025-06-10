@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号管理 - 视频数据平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 0.35em 0.65em;
+        }
+        .account-actions {
+            min-width: 180px;
+            text-align: right;
+        }
+        .status-toggle {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- 顶部导航 -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-camera-reels"></i> 视频数据平台
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">仪表盘</a>
+                        </li>
+                        <极速安装步骤极速安装步骤                        <li class="nav-item">
+                            <a class="nav-link active" href="/accounts">账号管理</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 消息提示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- 添加新账号表单 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">添加新账号</h5>
+            </div>
+            <div class="card-body">
+                <form id="addAccountForm" method="POST" action="/add-account">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label for="username" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="username" name="username" required placeholder="输入视频号用户名">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="nickname" class="form-label">昵称 (可选)</label>
+                            <input type="text" class="form-control" id="nickname" name="nickname" placeholder="输入显示昵称">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label d-none d-md-block">&nbsp;</label>
+                            <button type="submit" class极速安装步骤极速安装步骤                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i> 添加账号
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 账号列表 -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">管理视频号账号</h5>
+            </div>
+            <div class="card-body">
+                {% if accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>昵称</th>
+                                    <th>状态</th>
+                                    <th>添加时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in accounts %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="d-flex flex-column">
+                                                <span class="text-primary">{{ account.username }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ account.nickname or '-' }}</td>
+                                    <td>
+                                        <div class="status-toggle">
+                                            <form method="POST" action="/update-account/{{ account.id }}">
+                                                {% if account.is_active %}
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check-circle"></i> 启用
+                                                    </button>
+                                                    <input type="hidden" name="is_active" value="false">
+                                                {% else %}
+                                                    <button type="submit" class="btn btn-secondary btn-sm">
+                                                        <i class="bi bi-x-circle"></i> 禁用
+                                                    </button>
+                                                    <input type="hidden" name="is_active" value="true">
+                                                {% endif %}
+                                            </form>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if account.created_at %}
+                                            {{ account.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="account-actions">
+                                        <form method="POST" action="/delete-account/{{ account.id }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除此账号吗？相关视频数据也会被删除。');">
+                                                <i class="bi bi-trash"></i> 删除
+                                            </button>
+                                        </form>
+                                        <button class="btn btn-info btn-sm fetch-data-btn" data-username="{{ account.username }}" data-loading-text="获取中...">
+                                            <i class="bi bi-arrow-repeat"></i> 获取数据
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <div>尚未添加任何视频号账号</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 获取账号数据按钮
+            $('.fetch-data-btn').click(function() {
+                const button = $(this);
+                const originalText = button.html();
+                const username = button.data('username');
+
+                // 显示加载状态
+                button.prop('disabled', true);
+                button.html('<span class="spinner-border spinner-border-sm"></span> ' + button.data('loading-text'));
+
+                // 调用获取数据的API
+                $.ajax({
+                    url: '/fetch-account-data',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({username: username}),
+                    success: function(response) {
+                        if(response.added_count > 0) {
+                            alert(`成功获取 ${response.added_count} 条新视频数据`);
+                        } else {
+                            alert('没有获取到新数据');
+                        }
+                    },
+                    error: function() {
+                        alert('获取数据失败');
+                    },
+                    complete: function() {
+                        // 恢复按钮状态
+                        button.prop('disabled', false);
+                        button.html(originalText);
+                    }
+                });
+            });
+
+            // 表单提交处理
+            $('#addAccountForm').submit(function() {
+                const username = $('#username').val().trim();
+                if(!username) {
+                    alert('用户名不能为空');
+                    return false;
+                }
+                return true;
+            });
+        });
+    </script>
+</body>
+</html>
